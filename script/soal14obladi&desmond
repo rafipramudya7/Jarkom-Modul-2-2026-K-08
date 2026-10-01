@@ -1,0 +1,16 @@
+#!/bin/bash
+apt-get update
+apt-get install apache2 -y
+
+# Mengubah LogFormat secara otomatis agar mencatat IP klien dari header X-Real-IP
+sed -i 's/LogFormat "%h/LogFormat "%{X-Real-IP}i/g' /etc/apache2/apache2.conf
+
+service apache2 restart
+
+tail -f /var/log/nginx/access.log
+
+tail -f /var/log/apache2/access.log
+
+curl [http://192.215.2.2](http://192.215.2.2)
+
+curl [http://192.215.4.2](http://192.215.4.2
