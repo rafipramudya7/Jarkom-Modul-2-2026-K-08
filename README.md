@@ -1,3 +1,59 @@
+# Jarkom-Modul-2-2026-K-08
+
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/Jaringan_Komputer-The_Mesh-1a1a2e?style=for-the-badge&logo=cisco&logoColor=white"/>
+<img src="https://img.shields.io/badge/GNS3-Network_Simulation-009FDF?style=for-the-badge&logo=gns3&logoColor=white"/>
+<img src="https://img.shields.io/badge/Docker-Container-2496ED?style=for-the-badge&logo=docker&logoColor=white"/>
+<img src="https://img.shields.io/badge/Debian-13_Trixie-A81D33?style=for-the-badge&logo=debian&logoColor=white"/>
+
+</div>
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/BIND9-DNS_Server-blue?style=for-the-badge&logo=internetcomputer&logoColor=white"/>
+<img src="https://img.shields.io/badge/DNS-Master_Slave-00599C?style=for-the-badge&logo=cloudflare&logoColor=white"/>
+<img src="https://img.shields.io/badge/Reverse_DNS-PTR_Record-4B8BBE?style=for-the-badge&logo=internetcomputer&logoColor=white"/>
+<img src="https://img.shields.io/badge/TXT_Record-DNS-0078D4?style=for-the-badge&logo=cachet&logoColor=white"/>
+
+</div>
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/Apache-Web_Server-D22128?style=for-the-badge&logo=apache&logoColor=white"/>
+<img src="https://img.shields.io/badge/Nginx-Reverse_Proxy-009639?style=for-the-badge&logo=nginx&logoColor=white"/>
+<img src="https://img.shields.io/badge/PHP-8.4_FPM-777BB4?style=for-the-badge&logo=php&logoColor=white"/>
+<img src="https://img.shields.io/badge/Basic_Auth-htpasswd-FFA500?style=for-the-badge&logo=letsencrypt&logoColor=white"/>
+
+</div>
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/NAT-iptables-8A2BE2?style=for-the-badge&logo=linux&logoColor=white"/>
+<img src="https://img.shields.io/badge/IP_Forwarding-Routing-556B2F?style=for-the-badge&logo=cisco&logoColor=white"/>
+<img src="https://img.shields.io/badge/ICMP-Ping-orange?style=for-the-badge&logo=speedtest&logoColor=white"/>
+<img src="https://img.shields.io/badge/HTTP-Web_Traffic-005571?style=for-the-badge&logo=googlechrome&logoColor=white"/>
+
+</div>
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/ApacheBench-Stress_Test-D22128?style=for-the-badge&logo=apache&logoColor=white"/>
+<img src="https://img.shields.io/badge/Bash-Scripting-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white"/>
+<img src="https://img.shields.io/badge/X--Real--IP-Header_Forwarding-6A5ACD?style=for-the-badge&logo=cloudflare&logoColor=white"/>
+<img src="https://img.shields.io/badge/301%2F302-HTTP_Redirect-DC143C?style=for-the-badge&logo=googlechrome&logoColor=white"/>
+
+</div>
+
+<div align="center">
+
+| Nama | NRP |
+|:-------:|:------:|
+| **Muhammad Rafi Pramudya Putra** | `5027251024` |
+| **Alif Ramzy Pasha Firdaus** | `5027251121` |
+</div>
+
 # soal 1 
    Setup topologi sesuai dengan perintah di soal 
    berikut untuk daftar ip ip nya 
