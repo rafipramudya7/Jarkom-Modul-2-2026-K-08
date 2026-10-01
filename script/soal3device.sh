@@ -16,5 +16,3 @@ echo "Konfigurasi /etc/network/interfaces:"
 cat /etc/network/interfaces
 
 echo ""
-echo "Konfigurasi selesai."
-echo "Silakan ganti X dan Y sesuai IP perangkat."

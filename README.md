@@ -1,51 +1,29 @@
-# cara menjalankannya 
+# soal 1 
+   Setup topologi sesuai dengan perintah di soal 
+   berikut untuk daftar ip ip nya 
 
-tinggal jalankan tiap sh sesuai dengan nama sh tersebut. untuk device sh maka jalankan di tiap node non route dengan pengganti XY yang sesuai. Begitu juga untuk node template sh 
+   ```
+alpha: 192.215.1.2 
+beta: 192.215.1.3 
+gamma: 192.215.1.4 
+delta: 192.215.3.2 
+epsilon: 192.215.3.3 
+prab: 192.215.5.2 
+tedd: 192.215.5.3 
+abbey: 192.215.2.2 
+penny: 192.215.4.2 
+obladi: 192.215.5.4 
+desmond: 192.215.5.5 
+oblada: 192.215.5.6 
+molly: 192.215.5.7
+   ```
+   # Soal 2
+   Untuk memastikan setup tidak hilang ketika di restart disini kamu menambahkan sebuah file konfigurasi. Berikut file sh yang kami gunakan untuk memudahkan setup jaringan dengan mengganti X dan Y sesuai dengan pembagian IP
 
+   ```
+#!/bin/bash
 
-
-
-
-# Set up network
-
-Route
-```
-auto lo
-iface lo inet loopback
-
-# eth0 -> WAN (Cloud/NAT)
-auto eth0
-iface eth0 inet dhcp
-    post-up sysctl -w net.ipv4.ip_forward=1
-    post-up iptables -t nat -C POSTROUTING -o eth0 -j MASQUERADE || iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-
-# eth1 -> SW1 (alpha, beta, gamma)
-auto eth1
-iface eth1 inet static
-    address 192.215.1.1
-    netmask 255.255.255.0
-
-# eth2 -> SW2 (delta, epsilon)
-auto eth2
-iface eth2 inet static
-    address 192.215.2.1
-    netmask 255.255.255.0
-
-# eth3 -> SW3 (prab, tedd)
-auto eth3
-iface eth3 inet static
-    address 192.215.3.1
-    netmask 255.255.255.0
-
-# eth4 -> SW4 (abbey, penny, obladi, desmond, oblada, molly)
-auto eth4
-iface eth4 inet static
-    address 192.215.4.1
-    netmask 255.255.255.0
-```
-
-device
-```
+cat > /etc/network/interfaces <<'EOF'
 auto lo
 iface lo inet loopback
 
@@ -54,189 +32,558 @@ iface eth0 inet static
     address 192.215.X.Y
     netmask 255.255.255.0
     gateway 192.215.X.1
-    post-up echo "nameserver 192.168.122.1" > /etc/resolv.conf
-```
+    post-up echo "nameserver 8.8.8.8" > /etc/resolv.conf
+EOF
 
-panduan lengkap Konfigurasi DNS Server BIND9 (Master & Slave)
-Dokumen ini berisi langkah-langkah lengkap dari nol untuk mengonfigurasi prab sebagai Primary/Master DNS Server dan tedd sebagai Secondary/Slave DNS Server untuk domain `ramzy.com`.
----
-Informasi Jaringan
-Domain Name: `ramzy.com`
-Master DNS (`prab`): `192.215.5.2`
-Slave DNS (`tedd`): `192.215.5.3`
-Upstream Forwarder: `192.168.122.1`
----
-bagian 1: Konfigurasi Master DNS Server (prab)
-1. Install Software BIND9
-Jalankan pembaruan paket dan install BIND9 beserta utilitas pendukungnya:
-```bash
-apt update
-apt install -y bind9 bind9utils dnsutils
-```
-2. Deklarasikan Zona Domain (Master)
-Buka file `/etc/bind/named.conf.local`:
-```bash
-nano /etc/bind/named.conf.local
-```
-Tambahkan konfigurasi zona master berikut:
-```text
+echo "Konfigurasi /etc/network/interfaces:"
+cat /etc/network/interfaces
+
+echo "selesai"
+   ```
+
+   # Soal 3
+   Didalam soal diperintahkan untuk resolve kedalam alamat ip nat saja tidak perlu di google.com, tambahkan
+
+   ```
+   echo "nameserver 192.168.122.1" > /etc/resolv.conf
+   ```
+   # soal 4
+   Didalam Prab kita disuruh untuk membangun Zona `xxxx.com` sebagai authoritative dengan SOA yang merujuk ke `prab.xxxx.com` serta menambahkan `NS` untuk `prab.xxxx.com` dan `tedd.xxxx.com` dan konfigurasi lainya. untuk memudahkan hal tersebut kita mensetting mengguankan script:
+   ```
+#!/bin/bash
+set -e
+
+apt-get install -y bind9 bind9utils dnsutils >/dev/null
+
+cat > /etc/bind/named.conf.options << 'EOF'
+options {
+    directory "/var/cache/bind";
+    forwarders {
+        192.168.122.1;
+    };
+};
+EOF
+
+cat > /etc/bind/named.conf.local << 'EOF'
 zone "ramzy.com" {
     type master;
     file "/etc/bind/db.ramzy.com";
     notify yes;
     allow-transfer { 192.215.5.3; };
 };
-```
-> **Penjelasan:**
-> * `type master;` menentukan node ini sebagai pemilik utama data zona.
-> * `notify yes;` memberi tahu slave secara otomatis ketika ada perubahan record.
-> * `allow-transfer { 192.215.5.3; };` mengizinkan `tedd` untuk menyalin file zona.
-3. Buat dan Isi File Record Domain
-Buka file `/etc/bind/db.ramzy.com`:
-```bash
-nano /etc/bind/db.ramzy.com
-```
-Isi dengan SOA, NS, dan A Record untuk domain `ramzy.com`:
-```text
+EOF
+
+cat > /etc/bind/db.ramzy.com << 'EOF'
 $TTL    604800
-@       IN      SOA     ramzy.com. root.ramzy.com. (
-                              2         ; Serial
+@       IN      SOA     prab.ramzy.com. admin.ramzy.com. (
+                              1         ; Serial
                          604800         ; Refresh
                           86400         ; Retry
                         2419200         ; Expire
                          604800 )       ; Negative Cache TTL
-;
+
 @       IN      NS      prab.ramzy.com.
 @       IN      NS      tedd.ramzy.com.
-@       IN      A       192.215.5.2
+
 prab    IN      A       192.215.5.2
 tedd    IN      A       192.215.5.3
-```
-4. Konfigurasi Opsi dan Forwarders
-Buka file `/etc/bind/named.conf.options`:
-```bash
-nano /etc/bind/named.conf.options
-```
-Sesuaikan isinya:
-```text
-options {
-    directory "/var/cache/bind";
 
-    forwarders {
-        192.168.122.1;
-    };
+@       IN      A       192.215.4.2
+EOF
 
-};
-```
-5. Atur Hak Akses Direktori (Permissions)
-Pastikan user `bind` memiliki hak akses penuh ke folder kerja:
-```bash
 mkdir -p /run/named
 chown bind:bind /run/named
 chown -R bind:bind /var/cache/bind
-```
-6. Jalankan Service BIND9
-Eksekusi daemon BIND9 dengan perintah:
-```bash
+chown bind:bind /etc/bind/db.ramzy.com
+
+named-checkconf
+named-checkzone ramzy.com /etc/bind/db.ramzy.com
+
+pkill named 2>/dev/null || true
+sleep 1
 named -u bind -c /etc/bind/named.conf
-```
-7. Verifikasi dan Pengujian (prab)
-Uji apakah DNS Master sudah merespons dengan benar:
-```bash
-dig @127.0.0.1 ramzy.com NS
-```
----
-bagian 2: Konfigurasi Slave DNS Server (tedd)
-1. Install Software BIND9
-Install paket BIND9 pada peranti `tedd`:
-```bash
-apt update
-apt install -y bind9 bind9utils dnsutils
-```
-2. Deklarasikan Zona Domain (Slave)
-Buka file `/etc/bind/named.conf.local`:
-```bash
-nano /etc/bind/named.conf.local
-```
-Tambahkan konfigurasi zona slave berikut:
-```text
+
+echo "nameserver 127.0.0.1" > /etc/resolv.conf
+echo "[prab] setup done"
+   ```
+   inti dari script tersebut adalah nebsetup server dns forwarder. Pertama tama install `bind9` lalu kita setup option pada file `/etc/bind/named.conf.options` dan `/etc/bind/named.conf.local` untuk setup nama zone nya dan letak dari file `SOA` nya dan setup alamat untuk secondary server. Lalu di `/etc/bind/db.ramzy.com` kita mensetting mana yang menjadi server pusat dan mana yang menjadi secondary server.
+
+   lalu kita mensetting juga `name server record` / `NS` ke domain `pram.ramzy.com` dan `tedd.ramzy.com`. setting juga untuk alaman ip untuk kedua domain tersebut sesuai dengan ip dari `prab`dan `tedd`. Lalu buad directory untuk menyimpan file `bind9`. Jangan lupa untuk mengganti permission dan membuat akun `bind`. lalu resolve domain nya kita arahkan ke device itu sendiri karena prabb dan tedd menjadi `dns forwarder` dan sudah di sett pada `/etc/bind/name.conf.options` jika tidak ditemukan maka ajukan ke alamat ip milik NAT, diakhir juga kita arahkan gerbang aplikasi dinamis ke `penny`
+
+   Lalu kita setup untuk secondary server DNS nya yaitu `tedd`:
+
+   ```
+#!/bin/bash
+set -e
+
+apt-get install -y bind9 bind9utils dnsutils >/dev/null
+
+cat > /etc/bind/named.conf.options << 'EOF'
+options {
+    directory "/var/cache/bind";
+    forwarders {
+        192.168.122.1;
+    };
+};
+EOF
+
+cat > /etc/bind/named.conf.local << 'EOF'
 zone "ramzy.com" {
     type slave;
     file "/var/cache/bind/db.ramzy.com";
     masters { 192.215.5.2; };
 };
-```
-> **Penjelasan:**
-> * `type slave;` menandakan bahwa server ini menyalin data dari master.
-> * `file "/var/cache/bind/db.ramzy.com";` lokasi penyimpanan hasil salinan (direktori yang dapat ditulis oleh user `bind`).
-> * `masters { 192.215.5.2; };` mengarah ke IP `prab` sebagai sumber utama.
-3. Konfigurasi Opsi dan Forwarders
-Buka file `/etc/bind/named.conf.options`:
-```bash
-nano /etc/bind/named.conf.options
-```
-Sesuaikan isinya:
-```text
-options {
-    directory "/var/cache/bind";
+EOF
 
-    forwarders {
-        192.168.122.1;
-    };
-
-};
-```
-4. Atur Hak Akses Direktori (Permissions)
-Persiapkan direktori kerja agar `tedd` dapat mengunduh dan menyimpan file dari `prab`:
-```bash
 mkdir -p /run/named
 chown bind:bind /run/named
 chown -R bind:bind /var/cache/bind
-```
-5. Jalankan Service BIND9
-Jalankan BIND9. Pada saat dijalankan, `tedd` akan langsung mengontak `prab` dan mengunduh file zona `db.ramzy.com`:
-```bash
+rm -f /var/cache/bind/db.ramzy.com
+
+named-checkconf
+
+pkill named 2>/dev/null || true
+sleep 1
 named -u bind -c /etc/bind/named.conf
-```
-6. Verifikasi dan Pengujian (tedd)
-Uji query DNS lokal di `tedd`:
-```bash
-   dig @127.0.0.1 ramzy.com NS
+
+echo "nameserver 127.0.0.1" > /etc/resolv.conf
+echo "[tedd] setup done"
    ```
-Pastikan file `db.ramzy.com` berhasil tersalin di direktori slave:
-```bash
-   ls -la /var/cache/bind/
+
+   inti dari file tersebut sama seperti milik `Prabb` namun pada `Tedd` dia tinggal mengambil config dari milik si `Prabb`.
+
+   setelah semua terpasang kita pastikan koneksinya benar menggunakan command cek koneksi khusus `DNS`, pada `Prab` dan `Tedd`
+
    ```
-   # soal 4
-   ![alt text](image.png)
-   ![alt text](image-1.png)
-   ![alt text](image-2.png)
-   ![alt text](image-3.png)
-   ![alt text](image-4.png)
+dig@127.0.0.1 ramzy.com SOA
+dig@127.0.0.1 ramzy.com NS
+   ```
+   berikut hasilnya: 
+   ![alt text](image/image.png)
+   ![alt text](image/image-1.png)
+   ![alt text](image/image-2.png)
+   ![alt text](image/image-3.png)
+   ![alt text](image/image-4.png)
 
    # soal 5
-   ![alt text](image-5.png)
-   ![ ](image-6.png)
+   Pada soal ini kita diperintahkan untuk mengganti nama `hostame` sesuai dengan nama device masin masing dan mensetting resolve dns nya menuju server milik si `Tedd` dan `Prab`, berikut command nya (diganti sesuai nama nya )
+   ```
+echo "oblada" > /etc/hostname
+hostname oblada
+echo "127.0.1.1   oblada" >> /etc/hosts
+cat > /etc/resolv.conf << EOF
+nameserver 192.215.5.2
+nameserver 192.215.5.3
+nameserver 192.168.122.1
+EOF
+   ```
+   Setelah itu kita setup pada `Prab` untuk nama domain masing masing dengan menambahkan konfigurasi di file `/etc/bind/db.ramzy.com`, untuk memudahkan hal tersebut disini kami mengguankan script
+
+   ```
+#!/bin/bash
+set -e
+
+cat > /etc/bind/db.ramzy.com << 'EOF'
+$TTL    604800
+@       IN      SOA     prab.ramzy.com. admin.ramzy.com. (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+
+@       IN      NS      prab.ramzy.com.
+@       IN      NS      tedd.ramzy.com.
+
+prab    IN      A       192.215.5.2
+tedd    IN      A       192.215.5.3
+
+@       IN      A       192.215.4.2
+
+alpha    IN      A       192.215.1.2
+beta     IN      A       192.215.1.3
+gamma    IN      A       192.215.1.4
+delta    IN      A       192.215.3.2
+epsilon  IN      A       192.215.3.3
+abbey    IN      A       192.215.2.2
+penny    IN      A       192.215.4.2
+obladi   IN      A       192.215.5.4
+desmond  IN      A       192.215.5.5
+oblada   IN      A       192.215.5.6
+molly    IN      A       192.215.5.7
+EOF
+
+chown bind:bind /etc/bind/db.ramzy.com
+named-checkzone ramzy.com /etc/bind/db.ramzy.com
+rndc reload ramzy.com
+
+echo "[prab] soal 5 zona updated, serial=2"
+   ```
+
+   untuk membuktikan jika nama nama domain `DNS` yang didaftarkan sudah valid kita random samplig cek koneksi dns pada domain tersebut berikut hasilnya:
+   ![alt text](image/image-5.png)
+   ![alt text](image/image-6.png)
 
    # soal 6
-   ![alt text](image-7.png)
+   Disini kita hanya perlu cek apakah serial dari `Tedd`dan `Prab` sama. Dan hasil dibawah menunjukan serial dari kedua config tersebut sudah `2`
+   ![alt text](image/image-7.png)
+   ![alt text](image/image-8.png)
 
    # soal 7
-   ![alt text](image-8.png)
-   ![alt text](image-9.png)
-   ![alt text](image-10.png)
-   ![alt text](image-11.png)
-   ![alt text](image-12.png)
+   Disini kita setup `abbey` dan  `Penny` sebagai gerbang utapa dan `obladi`,`desmond` sebahai web statis, `oblada` dan `molly` sebagai gerbang dinamis. disini kita akan menambahkan `ramzy.com` dan `vault.ramzy.com` dan `core.ramzy.com` menggunakan `CNAME`.
+
+   ```
+
+#!/bin/bash
+set -e
+
+cat >> /etc/bind/db.ramzy.com << 'EOF'
+
+vault    IN      A       192.215.5.4
+vault    IN      A       192.215.5.5
+core     IN      A       192.215.5.6
+core     IN      A       192.215.5.7
+
+www      IN      CNAME   penny.ramzy.com.
+static   IN      CNAME   abbey.ramzy.com.
+EOF
+
+sed -i 's/2         ; Serial/3         ; Serial/' /etc/bind/db.ramzy.com
+
+named-checkzone ramzy.com /etc/bind/db.ramzy.com
+rndc reload ramzy.com
+
+echo "[prab] soal 7 zona updated, serial=3"
+   ```
+   lalu kita cek serial dari sisi  `Tedd` dan harus terupdate menjadi serial `3`. lalu kita cek juga `static`, `vault`, `core` dan `www`
+
+   ![alt text](image/image-9.png)
+   ![alt text](image/image-10.png)
+   ![alt text](image/image-11.png)
+   ![alt text](image/image-12.png)
 
    # soal 8
-   ![alt text](image-13.png)
-   ![alt text](image-14.png)
-   ![alt text](image-15.png)
-   ![alt text](image-16.png)
-![alt text](image-17.png)
+   Selanjutnya kita perlu setup reverse zone untuk beberapa segmen jaringan dengan menggunakan `PTR`. pertama tama kita setup dulu untuk prab
+   
+   ```
+#!/bin/bash
+set -e
+
+cat >> /etc/bind/named.conf.local << 'EOF'
+
+zone "2.215.192.in-addr.arpa" {
+    type master;
+    file "/etc/bind/db.192.215.2";
+    allow-transfer { 192.215.5.3; };
+};
+
+zone "4.215.192.in-addr.arpa" {
+    type master;
+    file "/etc/bind/db.192.215.4";
+    allow-transfer { 192.215.5.3; };
+};
+
+zone "5.215.192.in-addr.arpa" {
+    type master;
+    file "/etc/bind/db.192.215.5";
+    allow-transfer { 192.215.5.3; };
+};
+EOF
+
+cat > /etc/bind/db.192.215.2 << 'EOF'
+$TTL    604800
+@       IN      SOA     prab.ramzy.com. admin.ramzy.com. (
+                              1         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+
+@       IN      NS      prab.ramzy.com.
+@       IN      NS      tedd.ramzy.com.
+
+2       IN      PTR     abbey.ramzy.com.
+EOF
+
+cat > /etc/bind/db.192.215.4 << 'EOF'
+$TTL    604800
+@       IN      SOA     prab.ramzy.com. admin.ramzy.com. (
+                              1         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+
+@       IN      NS      prab.ramzy.com.
+@       IN      NS      tedd.ramzy.com.
+
+2       IN      PTR     penny.ramzy.com.
+EOF
+
+cat > /etc/bind/db.192.215.5 << 'EOF'
+$TTL    604800
+@       IN      SOA     prab.ramzy.com. admin.ramzy.com. (
+                              1         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+
+@       IN      NS      prab.ramzy.com.
+@       IN      NS      tedd.ramzy.com.
+
+2       IN      PTR     prab.ramzy.com.
+3       IN      PTR     tedd.ramzy.com.
+4       IN      PTR     obladi.ramzy.com.
+5       IN      PTR     desmond.ramzy.com.
+6       IN      PTR     oblada.ramzy.com.
+7       IN      PTR     molly.ramzy.com.
+EOF
+
+chown bind:bind /etc/bind/db.192.215.2 /etc/bind/db.192.215.4 /etc/bind/db.192.215.5
+
+named-checkconf
+named-checkzone 2.215.192.in-addr.arpa /etc/bind/db.192.215.2
+named-checkzone 4.215.192.in-addr.arpa /etc/bind/db.192.215.4
+named-checkzone 5.215.192.in-addr.arpa /etc/bind/db.192.215.5
+
+rndc reload
+
+echo "[prab] soal 8 reverse zones added"
+   ```
+
+   disini kita bagi menjadi 3 zone untuk setup reverse dns nya. Kita setup juga untuk domain tujuan menggunnakan `PTR` dan digit akhir sesuai dengan ip aslinya. Begitu juga kita setup pada Tedd
+
+   ```
+#!/bin/bash
+set -e
+
+apt-get install -y bind9 bind9utils dnsutils >/dev/null
+
+cat > /etc/bind/named.conf.options << 'EOF'
+options {
+    directory "/var/cache/bind";
+    forwarders {
+        192.168.122.1;
+    };
+};
+EOF
+
+cat > /etc/bind/named.conf.local << 'EOF'
+zone "ramzy.com" {
+    type slave;
+    file "/var/cache/bind/db.ramzy.com";
+    masters { 192.215.5.2; };
+};
+EOF
+
+mkdir -p /run/named
+chown bind:bind /run/named
+chown -R bind:bind /var/cache/bind
+rm -f /var/cache/bind/db.ramzy.com
+
+named-checkconf
+
+pkill named 2>/dev/null || true
+sleep 1
+named -u bind -c /etc/bind/named.conf
+
+echo "nameserver 127.0.0.1" > /etc/resolv.conf
+echo "[tedd] setup done"
+   ```
+   untuk menguji keberhasilan setup kita bisa mengetes koneksi dns dari alamat tiap tiap ip nya  
+   ![alt text](image/image-13.png)
+   ![alt text](image/image-14.png)
+   ![alt text](image/image-15.png)
+   ![alt text](image/image-16.png)
+  ![alt text](image/image-17.png)
 
 # soal 9 
-![alt text](image-18.png)
+Disini kita akan setup `apache` pada desmond dan obladi dan mengaktifkan fitur `autoindex` berikut setup pada desmond dan obladi
+```
+#!/bin/bash
+set -e
+
+apt-get install -y apache2 >/dev/null
+
+mkdir -p /arsip
+echo "file contoh 1" > /arsip/contoh1.txt
+echo "file contoh 2" > /arsip/contoh2.txt
+
+cat > /etc/apache2/sites-available/arsip.conf << 'EOF'
+<VirtualHost *:80>
+    ServerName desmond.ramzy.com
+    DocumentRoot /var/www/html
+
+    Alias /arsip /arsip
+
+    <Directory /arsip>
+        Options +Indexes +FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+</VirtualHost>
+EOF
+
+a2dissite 000-default.conf
+a2ensite arsip.conf
+a2enmod autoindex
+
+apache2ctl configtest
+pkill apache2 2>/dev/null || true
+sleep 1
+apache2ctl start
+
+echo "[desmond] soal 9 done"
+```
+
+```
+#!/bin/bash
+set -e
+
+apt-get install -y apache2 >/dev/null
+
+mkdir -p /arsip
+echo "file contoh 1" > /arsip/contoh1.txt
+echo "file contoh 2" > /arsip/contoh2.txt
+
+cat > /etc/apache2/sites-available/arsip.conf << 'EOF'
+<VirtualHost *:80>
+    ServerName obladi.ramzy.com
+    DocumentRoot /var/www/html
+
+    Alias /arsip /arsip
+
+    <Directory /arsip>
+        Options +Indexes +FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+</VirtualHost>
+EOF
+
+a2dissite 000-default.conf
+a2ensite arsip.conf
+a2enmod autoindex
+
+apache2ctl configtest
+pkill apache2 2>/dev/null || true
+sleep 1
+apache2ctl start
+
+echo "[obladi] soal 9 done"
+```
+untuk membuktikan berhasil setup disini kita coba `curl` dari penny untuk mengambil file txt nya
+![alt text](image/image-18.png)
 
 # soal 10
-![alt text](image-19.png)
+Disini kita akan menjalankan web dinamis di node core menggunakna `nginx` dna membuat halaman profil sederhana. dan menerapkan aturan rewrite pada server sehingga akses `/profil` dapat menggunakan url bersih tanpa akhiran `.php`. disini kita setup untuk molly terlebih dahulu
+
+```
+#!/bin/bash
+set -e
+
+apt-get install -y nginx php8.4-fpm >/dev/null
+
+mkdir -p /var/www/core
+cat > /var/www/core/index.php << 'EOF'
+<?php
+echo "<h1>Beranda - molly</h1>";
+echo "<p>Selamat datang di area core.</p>";
+echo "<p><a href='/profil'>Lihat Profil</a></p>";
+EOF
+
+cat > /var/www/core/profil.php << 'EOF'
+<?php
+echo "<h1>Halaman Profil</h1>";
+echo "<p>Ini halaman profil, diakses lewat URL bersih /profil (tanpa .php).</p>";
+EOF
+
+cat > /etc/nginx/sites-available/core.conf << 'EOF'
+server {
+    listen 80;
+    server_name molly.ramzy.com;
+    root /var/www/core;
+    index index.php;
+
+    location / {
+        try_files $uri $uri.php $uri/ =404;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.4-fpm.sock;
+    }
+}
+EOF
+
+rm -f /etc/nginx/sites-enabled/default
+ln -sf /etc/nginx/sites-available/core.conf /etc/nginx/sites-enabled/core.conf
+
+nginx -t
+
+mkdir -p /run/php
+php-fpm8.4 -D
+pkill nginx 2>/dev/null || true
+sleep 1
+nginx
+
+echo "[molly] soal 10 done"
+```
+
+lalu setup untuk oblada
+
+```
+#!/bin/bash
+set -e
+
+apt-get install -y nginx php8.4-fpm >/dev/null
+
+mkdir -p /var/www/core
+cat > /var/www/core/index.php << 'EOF'
+<?php
+echo "<h1>Beranda - oblada</h1>";
+echo "<p>Selamat datang di area core.</p>";
+echo "<p><a href='/profil'>Lihat Profil</a></p>";
+EOF
+
+cat > /var/www/core/profil.php << 'EOF'
+<?php
+echo "<h1>Halaman Profil</h1>";
+echo "<p>Ini halaman profil, diakses lewat URL bersih /profil (tanpa .php).</p>";
+EOF
+
+cat > /etc/nginx/sites-available/core.conf << 'EOF'
+server {
+    listen 80;
+    server_name oblada.ramzy.com;
+    root /var/www/core;
+    index index.php;
+
+    location / {
+        try_files $uri $uri.php $uri/ =404;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.4-fpm.sock;
+    }
+}
+EOF
+
+rm -f /etc/nginx/sites-enabled/default
+ln -sf /etc/nginx/sites-available/core.conf /etc/nginx/sites-enabled/core.conf
+
+nginx -t
+
+mkdir -p /run/php
+php-fpm8.4 -D
+pkill nginx 2>/dev/null || true
+sleep 1
+nginx
+
+echo "[oblada] soal 10 done"
+```
+
+inti dari kedua file tersebut adalah mencoba merewrite ketika ada url seperti `/profil` maka dia otomatis ter rewrite menuju `/profil.php`. Untuk menguji dari setup tersebut sudah benar kita mencoba `curl /index` dan `curl /profil`
+![alt text](image/image-19.png)
