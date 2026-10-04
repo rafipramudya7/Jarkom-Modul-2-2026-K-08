@@ -832,3 +832,86 @@ curl -u prabs:pakar_pinter_jadi_gob*** [http://ramzy.com/admin](http://ramzy.com
 ```
 
 # soal 13
+Pada soal ini, kita diperintahkan membuat sistem redirect. Akses ke Penny dialihkan secara permanen (301) ke www.ramzy.com, dan akses ke Abbey dialihkan sementara (302) ke static.ramzy.com
+
+Script tambahan untuk Penny
+```
+Bash
+#!/bin/bash
+set -e
+
+cat > /etc/apache2/sites-available/000-default.conf << 'EOF'
+<VirtualHost *:80>
+    ServerName 192.215.4.2
+    ServerAlias penny.ramzy.com
+    Redirect permanent / [http://www.ramzy.com/](http://www.ramzy.com/)
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerName ramzy.com
+    ServerAlias [www.ramzy.com](https://www.ramzy.com)
+
+    <Proxy balancer://vault>
+        BalancerMember [http://192.215.5.4](http://192.215.5.4)
+        BalancerMember [http://192.215.5.5](http://192.215.5.5)
+    </Proxy>
+
+    ProxyPreserveHost On
+    RequestHeader set X-Real-IP expr=%{REMOTE_ADDR}
+
+    ProxyPass / balancer://vault/
+    ProxyPassReverse / balancer://vault/
+
+    <Location /admin>
+        AuthType Basic
+        AuthName "Restricted Area"
+        AuthUserFile /etc/apache2/.htpasswd
+        Require valid-user
+    </Location>
+</VirtualHost>
+EOF
+
+service apache2 restart
+echo "[penny] redirect 301 setup done"
+```
+Script tambahan untuk Abbey
+```
+Bash
+#!/bin/bash
+set -e
+
+cat > /etc/nginx/sites-available/default << 'EOF'
+upstream core {
+    server 192.215.5.6;
+    server 192.215.5.7;
+}
+
+server {
+    listen 80;
+    server_name 192.215.2.2 abbey.ramzy.com;
+    return 302 [http://static.ramzy.com](http://static.ramzy.com)$request_uri;
+}
+
+server {
+    listen 80;
+    server_name static.ramzy.com ramzy.com _;
+
+    location / {
+        proxy_pass http://core;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+EOF
+
+service nginx restart
+echo "[abbey] redirect 302 setup done"
+```
+Inti dari konfigurasi ini adalah membuat blok server / VirtualHost baru yang bertugas mencegat request dengan tujuan IP atau subdomain tertentu, lalu mengembalikannya dengan header 301 Moved Permanently (menggunakan Redirect permanent) atau 302 Moved Temporarily (menggunakan return 302) ke alamat tujuan
+
+Pengujian di Alpha
+```
+curl -I [http://penny.ramzy.com](http://penny.ramzy.com)
+curl -I [http://abbey.ramzy.com](http://abbey.ramzy.com)
+```
+
+# soal 14
