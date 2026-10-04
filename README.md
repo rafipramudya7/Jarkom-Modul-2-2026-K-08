@@ -1058,3 +1058,63 @@ ab -n 250 -c 10 [http://static.ramzy.com/](http://static.ramzy.com/)
 ```
 
 # soal 17
+Menambahkan TXT record pada DNS untuk kelima klien agar mengembalikan teks berisi hostname mereka masing-masing
+
+Script di node Prab
+```
+Bash
+#!/bin/bash
+set -e
+
+cat >> /etc/bind/db.ramzy.com << 'EOF'
+
+alpha   IN  TXT "alpha"
+beta    IN  TXT "beta"
+gamma   IN  TXT "gamma"
+delta   IN  TXT "delta"
+epsilon IN  TXT "epsilon"
+EOF
+
+service bind9 restart
+echo "[prab] TXT record added"
+```
+Pengujian DNS dari Alpha
+```
+host -t TXT alpha.ramzy.com 192.215.5.2
+```
+
+# Soal 19
+Membuat CNAME record untuk mem-binding domain outbound.ramzy.com menuju http.badssl.com
+
+Setup di Prab dengan script
+```
+Bash
+#!/bin/bash
+set -e
+
+cat >> /etc/bind/db.ramzy.com << 'EOF'
+
+outbound IN  CNAME http.badssl.com.
+EOF
+
+service bind9 restart
+echo "[prab] CNAME outbound added"
+```
+Pengujian dari Alpha
+```
+curl [http://outbound.ramzy.com](http://outbound.ramzy.com)
+```
+
+# soal 20
+setup di terminal Abbey
+```
+echo "bash /root/soal11Abbey.sh" >> ~/.bashrc
+echo "bash /root/soal13Abbey.sh" >> ~/.bashrc
+echo "bash /root/soal15Abbey.sh" >> ~/.bashrc
+```
+restart node lalu mengecek status layanannya tanpa mengonfigurasi apa-apa lagi
+```
+service nginx status
+# atau
+service apache2 status
+```
