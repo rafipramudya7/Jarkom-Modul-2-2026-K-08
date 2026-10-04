@@ -784,7 +784,9 @@ Inti dari kumpulan script di atas adalah menyetel Nginx dan Apache sebagai proxy
 curl [http://192.215.2.2](http://192.215.2.2)
 curl [http://192.215.4.2](http://192.215.4.2)
 ```
-![alt text]()
+![alt text](image/jarkom11_1.jpeg)
+![alt text](image/jarkom11_2.jpeg)
+![alt text](image/jarkom11_3.jpeg)
 
 # soal 12
 Di dalam Penny, kita disuruh untuk menerapkan perlindungan basic authentication khusus untuk path /admin menggunakan kredensial prabs. Kita setup menggunakan script berikut pada Penny:
@@ -830,6 +832,8 @@ Pengujian dilakukan dari Alpha:
 curl -I [http://ramzy.com/admin](http://ramzy.com/admin)
 curl -u prabs:pakar_pinter_jadi_gob*** [http://ramzy.com/admin](http://ramzy.com/admin)
 ```
+![alt text](image/jarkom12_1.jpeg)
+![alt text](image/jarkom12_2.jpeg)
 
 # soal 13
 Pada soal ini, kita diperintahkan membuat sistem redirect. Akses ke Penny dialihkan secara permanen (301) ke www.ramzy.com, dan akses ke Abbey dialihkan sementara (302) ke static.ramzy.com
@@ -913,6 +917,7 @@ Pengujian di Alpha
 curl -I [http://penny.ramzy.com](http://penny.ramzy.com)
 curl -I [http://abbey.ramzy.com](http://abbey.ramzy.com)
 ```
+![alt text](image/jarkom13_1.jpeg)
 
 # soal 14
 Soal ini meminta pembuktian bahwa access log pada setiap server web backend mencatat alamat IP asli klien, bukan IP proxy
@@ -923,6 +928,8 @@ tail -f /var/log/nginx/access.log
 tail -f /var/log/apache2/access.log
 ```
 Berikut hasil log yang membuktikan sistem mencatat IP klien Alpha (192.215.1.2)
+![alt text](image/jarkom14_1.jpeg)
+![alt text](image/jarkom14_2.jpeg)
 
 # soal 15
 Rootkit menginstruksikan pembuatan jalur proxy spesifik: /eternal di Penny yang harus bisa melakukan rendering PHP, dan /orion di Abbey yang murni menyajikan HTML statis.
@@ -1037,6 +1044,7 @@ Pengujian dari Alpha
 curl [http://www.ramzy.com/eternal/](http://www.ramzy.com/eternal/)
 curl [http://static.ramzy.com/orion/](http://static.ramzy.com/orion/)
 ```
+![alt text](image/jarkom15_1.jpeg)
 
 # soal 16
 Kita ditugaskan melakukan stress test ke gerbang jaringan (www dan static) dengan menggunakan ApacheBench.
@@ -1056,6 +1064,8 @@ Setelah itu kita jalankan benchmark dengan 250 request dan konkurensi 10
 ab -n 250 -c 10 [http://www.ramzy.com/](http://www.ramzy.com/)
 ab -n 250 -c 10 [http://static.ramzy.com/](http://static.ramzy.com/)
 ```
+![alt text](image/jarkom16_1.jpeg)
+![alt text](image/jarkom16_2.jpeg)
 
 # soal 17
 Menambahkan TXT record pada DNS untuk kelima klien agar mengembalikan teks berisi hostname mereka masing-masing
@@ -1082,6 +1092,7 @@ Pengujian DNS dari Alpha
 ```
 host -t TXT alpha.ramzy.com 192.215.5.2
 ```
+![alt text](image/jarkom17_1.jpeg)
 
 # Soal 19
 Membuat CNAME record untuk mem-binding domain outbound.ramzy.com menuju http.badssl.com
@@ -1104,6 +1115,8 @@ Pengujian dari Alpha
 ```
 curl [http://outbound.ramzy.com](http://outbound.ramzy.com)
 ```
+![alt text](image/jarkom19_1.jpeg)
+![alt text](image/jarkom19_2.jpeg)
 
 # soal 20
 setup di terminal Abbey
@@ -1118,3 +1131,4 @@ service nginx status
 # atau
 service apache2 status
 ```
+![alt text](image/jarkom20_1.jpeg)
