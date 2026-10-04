@@ -643,3 +643,192 @@ echo "[oblada] soal 10 done"
 
 inti dari kedua file tersebut adalah mencoba merewrite ketika ada url seperti `/profil` maka dia otomatis ter rewrite menuju `/profil.php`. Untuk menguji dari setup tersebut sudah benar kita mencoba `curl /index` dan `curl /profil`
 ![alt text](image/image-19.png)
+
+# soal 11
+Pada soal ini kita diminta untuk mengonfigurasi *reverse proxy* dan *load balancer* di area *core* (menggunakan Nginx di Abbey) dan area *vault* (menggunakan Apache di Penny). Selain itu, kita harus memastikan IP asli klien diteruskan ke *backend* menggunakan *header* `X-Real-IP`. Untuk memudahkan hal tersebut kita mensetting menggunakan script:
+
+Script untuk Abbey (Proxy Core):
+```bash
+#!/bin/bash
+set -e
+
+apt-get update
+apt-get install -y nginx >/dev/null
+
+cat > /etc/nginx/sites-available/default << 'EOF'
+upstream core {
+    server 192.215.5.6;
+    server 192.215.5.7;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://core;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+EOF
+
+nginx -t
+service nginx restart
+echo "[abbey] proxy core setup done"# soal 11
+Pada soal ini kita diminta untuk mengonfigurasi *reverse proxy* dan *load balancer* di area *core* (menggunakan Nginx di Abbey) dan area *vault* (menggunakan Apache di Penny). Selain itu, kita harus memastikan IP asli klien diteruskan ke *backend* menggunakan *header* `X-Real-IP`. Untuk memudahkan hal tersebut kita mensetting menggunakan script:
+
+Script untuk **Abbey** (Proxy Core):
+```bash
+#!/bin/bash
+set -e
+
+apt-get update
+apt-get install -y nginx >/dev/null
+
+cat > /etc/nginx/sites-available/default << 'EOF'
+upstream core {
+    server 192.215.5.6;
+    server 192.215.5.7;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://core;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+EOF
+
+nginx -t
+service nginx restart
+echo "[abbey] proxy core setup done"
+```
+Script untuk Oblada & Molly (Backend Core)
+```
+Bash
+#!/bin/bash
+set -e
+
+apt-get update
+apt-get install -y nginx >/dev/null
+
+cat > /etc/nginx/sites-available/default << 'EOF'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    set_real_ip_from 192.215.2.2; 
+    real_ip_header X-Real-IP;
+
+    root /var/www/html;
+    index index.html index.htm;
+    server_name _;
+    
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+EOF
+
+service nginx restart
+echo "[backend-core] setup done"
+```
+
+Script untuk Penny (Proxy Vault)
+```
+Bash
+#!/bin/bash
+set -e
+
+apt-get update
+apt-get install -y apache2 >/dev/null
+a2enmod proxy proxy_http proxy_balancer lbmethod_byrequests headers >/dev/null
+
+cat > /etc/apache2/sites-available/000-default.conf << 'EOF'
+<VirtualHost *:80>
+    <Proxy balancer://vault>
+        BalancerMember [http://192.215.5.4](http://192.215.5.4)
+        BalancerMember [http://192.215.5.5](http://192.215.5.5)
+    </Proxy>
+
+    ProxyPreserveHost On
+    RequestHeader set X-Real-IP expr=%{REMOTE_ADDR}
+
+    ProxyPass / balancer://vault/
+    ProxyPassReverse / balancer://vault/
+</VirtualHost>
+EOF
+
+service apache2 restart
+echo "[penny] proxy vault setup done"
+```
+Script untuk Obladi & Desmond (Backend Vault)
+```
+Bash
+#!/bin/bash
+set -e
+
+apt-get update
+apt-get install -y apache2 >/dev/null
+
+# Mengubah LogFormat secara otomatis
+sed -i 's/LogFormat "%h/LogFormat "%{X-Real-IP}i/g' /etc/apache2/apache2.conf
+
+service apache2 restart
+echo "[backend-vault] setup done"
+```
+Inti dari kumpulan script di atas adalah menyetel Nginx dan Apache sebagai proxy yang membagi beban (load balancing) ke dua backend masing-masing (memanfaatkan upstream di Nginx dan Proxy balancer di Apache), Setelah semua terpasang, kita pastikan koneksinya berhasil menggunakan curl dari client (Alpha)
+```
+curl [http://192.215.2.2](http://192.215.2.2)
+curl [http://192.215.4.2](http://192.215.4.2)
+```
+
+# soal 12
+Di dalam Penny, kita disuruh untuk menerapkan perlindungan basic authentication khusus untuk path /admin menggunakan kredensial prabs. Kita setup menggunakan script berikut pada Penny:
+```
+Bash
+#!/bin/bash
+set -e
+
+apt-get install -y apache2-utils >/dev/null
+
+# Membuat kredensial
+htpasswd -cb /etc/apache2/.htpasswd prabs pakar_pinter_jadi_gob***
+
+cat > /etc/apache2/sites-available/000-default.conf << 'EOF'
+<VirtualHost *:80>
+    <Proxy balancer://vault>
+        BalancerMember [http://192.215.5.4](http://192.215.5.4)
+        BalancerMember [http://192.215.5.5](http://192.215.5.5)
+    </Proxy>
+
+    ProxyPreserveHost On
+    RequestHeader set X-Real-IP expr=%{REMOTE_ADDR}
+
+    ProxyPass / balancer://vault/
+    ProxyPassReverse / balancer://vault/
+
+    <Location /admin>
+        AuthType Basic
+        AuthName "Restricted Area"
+        AuthUserFile /etc/apache2/.htpasswd
+        Require valid-user
+    </Location>
+</VirtualHost>
+EOF
+
+service apache2 restart
+echo "[penny] basic auth setup done"
+```
+Inti dari script tersebut adalah menginstal utilitas apache2-utils untuk membuat file kredensial .htpasswd berisi username dan password. Lalu pada konfigurasi VirtualHost, kita menambahkan blok <Location /admin> yang mewajibkan pengunjung memasukkan password yang valid.
+
+Pengujian dilakukan dari Alpha:
+```
+curl -I [http://ramzy.com/admin](http://ramzy.com/admin)
+curl -u prabs:pakar_pinter_jadi_gob*** [http://ramzy.com/admin](http://ramzy.com/admin)
+```
+
+# soal 13
