@@ -1039,3 +1039,22 @@ curl [http://static.ramzy.com/orion/](http://static.ramzy.com/orion/)
 ```
 
 # soal 16
+Kita ditugaskan melakukan stress test ke gerbang jaringan (www dan static) dengan menggunakan ApacheBench.
+
+Script instalasi di Alpha
+```
+Bash
+#!/bin/bash
+set -e
+
+apt-get update
+apt-get install -y apache2-utils >/dev/null
+echo "[alpha] apachebench terpasang"
+```
+Setelah itu kita jalankan benchmark dengan 250 request dan konkurensi 10
+```
+ab -n 250 -c 10 [http://www.ramzy.com/](http://www.ramzy.com/)
+ab -n 250 -c 10 [http://static.ramzy.com/](http://static.ramzy.com/)
+```
+
+# soal 17
