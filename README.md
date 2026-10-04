@@ -736,7 +736,6 @@ EOF
 service nginx restart
 echo "[backend-core] setup done"
 ```
-
 Script untuk Penny (Proxy Vault)
 ```
 Bash
@@ -785,6 +784,7 @@ Inti dari kumpulan script di atas adalah menyetel Nginx dan Apache sebagai proxy
 curl [http://192.215.2.2](http://192.215.2.2)
 curl [http://192.215.4.2](http://192.215.4.2)
 ```
+![alt text]()
 
 # soal 12
 Di dalam Penny, kita disuruh untuk menerapkan perlindungan basic authentication khusus untuk path /admin menggunakan kredensial prabs. Kita setup menggunakan script berikut pada Penny:
