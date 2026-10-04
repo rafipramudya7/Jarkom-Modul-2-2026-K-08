@@ -915,3 +915,127 @@ curl -I [http://abbey.ramzy.com](http://abbey.ramzy.com)
 ```
 
 # soal 14
+Soal ini meminta pembuktian bahwa access log pada setiap server web backend mencatat alamat IP asli klien, bukan IP proxy
+
+Pengecekan log di Oblada dan Obladi
+```
+tail -f /var/log/nginx/access.log
+tail -f /var/log/apache2/access.log
+```
+Berikut hasil log yang membuktikan sistem mencatat IP klien Alpha (192.215.1.2)
+
+# soal 15
+Rootkit menginstruksikan pembuatan jalur proxy spesifik: /eternal di Penny yang harus bisa melakukan rendering PHP, dan /orion di Abbey yang murni menyajikan HTML statis.
+
+Script untuk Obladi & Desmond (Backend Penny)
+```
+Bash
+#!/bin/bash
+set -e
+
+apt-get update
+apt-get install -y php libapache2-mod-php >/dev/null
+
+mkdir -p /var/www/eternal
+echo "<?php echo 'Halaman Eternal berhasil dirender dengan PHP!'; ?>" > /var/www/eternal/index.php
+
+service apache2 restart
+echo "[backend-vault] php eternal setup done"
+```
+Script untuk Penny
+```
+Bash
+#!/bin/bash
+set -e
+
+cat > /etc/apache2/sites-available/000-default.conf << 'EOF'
+<VirtualHost *:80>
+    ServerName 192.215.4.2
+    ServerAlias penny.ramzy.com
+    Redirect permanent / [http://www.ramzy.com/](http://www.ramzy.com/)
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerName ramzy.com
+    ServerAlias [www.ramzy.com](https://www.ramzy.com)
+
+    <Proxy balancer://vault>
+        BalancerMember [http://192.215.5.4](http://192.215.5.4)
+        BalancerMember [http://192.215.5.5](http://192.215.5.5)
+    </Proxy>
+
+    ProxyPreserveHost On
+    RequestHeader set X-Real-IP expr=%{REMOTE_ADDR}
+
+    ProxyPass /eternal balancer://vault/eternal
+    ProxyPassReverse /eternal balancer://vault/eternal
+
+    ProxyPass / balancer://vault/
+    ProxyPassReverse / balancer://vault/
+
+    <Location /admin>
+        AuthType Basic
+        AuthName "Restricted Area"
+        AuthUserFile /etc/apache2/.htpasswd
+        Require valid-user
+    </Location>
+</VirtualHost>
+EOF
+
+service apache2 restart
+echo "[penny] path eternal proxy setup done"
+```
+Script untuk Oblada & Molly (Backend Abbey)
+```
+Bash
+#!/bin/bash
+set -e
+
+mkdir -p /var/www/orion
+echo "<h1>Halaman Orion Statis</h1>" > /var/www/orion/index.html
+echo "[backend-core] html orion setup done"
+```
+Script untuk Abbey
+```
+Bash
+#!/bin/bash
+set -e
+
+cat > /etc/nginx/sites-available/default << 'EOF'
+upstream core {
+    server 192.215.5.6;
+    server 192.215.5.7;
+}
+
+server {
+    listen 80;
+    server_name 192.215.2.2 abbey.ramzy.com;
+    return 302 [http://static.ramzy.com](http://static.ramzy.com)$request_uri;
+}
+
+server {
+    listen 80;
+    server_name static.ramzy.com ramzy.com _;
+
+    location /orion/ {
+        proxy_pass http://core/orion/;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location / {
+        proxy_pass http://core;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+EOF
+
+service nginx restart
+echo "[abbey] path orion proxy setup done"
+```
+Pengujian dari Alpha
+```
+curl [http://www.ramzy.com/eternal/](http://www.ramzy.com/eternal/)
+curl [http://static.ramzy.com/orion/](http://static.ramzy.com/orion/)
+```
+
+# soal 16
